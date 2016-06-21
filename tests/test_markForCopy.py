@@ -5,97 +5,68 @@ import context
 import copy
 from textInfos import UNIT_CHARACTER
 
-
-# Not so sure that unittest.mock results in very readable tests. Perhaps if it is used along with
-# mockito
-# in the style:
-# when(reviewCursor).compareEndPoints(startMark, "endToEnd").thenReturn(1)
-# when(startMarkCopy).compareEndPoints(startMarkCopy, "startToEnd").thenReturn(1)
-# verify(startMarkCopy).updateSelection()
-# verifyNoMoreInteractions(startMarkCopy)
-
-# work around issue where mocked class has constructor taking arguments. See 
-# http://stackoverflow.com/questions/37923265/why-does-unittest-mock-fail-when-the-production-class-constructor-takes-extra-ar
-class wrapped_TextInfo(context.textInfos.TextInfo):
-	def __init__(self):
-		super(obj=None, position=None)
-
 class BasicTestSuite(unittest.TestCase):
 	"""Basic test Cases."""
 	
+	def setUp(self):
+		self.scriptRepeatCount = 0
+		self.ui = mock.MagicMock(name="ui", return_value=None)
+		self.log = mock.MagicMock(name="log", return_value=None)
+		self.reviewCursor = mock.MagicMock(name="reviewCursor", spec=wrapped_TextInfo)
+		self.objMock = mock.MagicMock(name="obj")
+		self.startMark = mock.MagicMock(name="startMark", spec=wrapped_TextInfo)
+		self.startMarkCopy = copy(self.startMark)
+		
+		self.reviewCursor.attach_mock(self.objMock, "obj")
+		self.objMock.attach_mock(self.startMark, "_copyStartMarker")
+		self.startMark.copy.return_value = self.startMarkCopy
+		
+	
 	# happy case
 	def test_doSelect(self):
-		# create mocks 
-		scriptRepeatCount = 0
-		ui = mock.MagicMock(name="ui", return_value=None)
-		log = mock.MagicMock(name="log", return_value=None)
-		reviewCursor = mock.MagicMock(name="reviewCursor", spec=wrapped_TextInfo)
-		startMark = mock.MagicMock(name="startMark", spec=wrapped_TextInfo)
-		# setup return values
-		reviewCursor.compareEndPoints.return_value = 1 # ahead of the start marker
-		startMarkCopy = mock.MagicMock(name="startMarkCopy", spec=wrapped_TextInfo)
-		startMarkCopy.compareEndPoints.return_value = 1 # selection to copy has range
-		startMark.copy.return_value = startMarkCopy
-		objMock = mock.MagicMock(name="obj")
-		reviewCursor.attach_mock(objMock, "obj")
-		reviewCursor.obj._copyStartMarker = startMark
-		del objMock._selectThenCopyRange
-		del objMock.waitForAndSpeakSelectionChange
+		self.startMark.set(start=5, end=5)
+		self.reviewCursor.set(start=8, end=8)
+		del self.objMock._selectThenCopyRange
+		del self.objMock.waitForAndSpeakSelectionChange
 		# do
-		markerBasedSelectAndCopy.doSelectThenCopy(scriptRepeatCount, reviewCursor, ui, log)
+		markerBasedSelectAndCopy.doSelectThenCopy(self.scriptRepeatCount, self.reviewCursor, self.ui, self.log)
 		# expect
-		ui.assert_has_calls([mock.call.message(u'Selection made')])
-		startMark.assert_has_calls([mock.call.copy()], any_order=True)
-		startMarkCopy.assert_has_calls([mock.call.setEndPoint(startMark, "startToStart"), mock.call.setEndPoint(reviewCursor, "endToEnd"), mock.call.move(UNIT_CHARACTER, 1, endpoint="end"), mock.call.updateSelection()], any_order=True)
+		self.ui.assert_has_calls([mock.call.message(u'Selection made')])
+		assert self.objMock._selectThenCopyRange != None
+		self.objMock._selectThenCopyRange.assert_has_calls([mock.call.updateSelection])
+		assert self.objMock._selectThenCopyRange.start == 5
+		assert self.objMock._selectThenCopyRange.end == 9
 
 	def test_doSelect_backwards(self):
-		# create mocks 
-		scriptRepeatCount = 0
-		ui = mock.MagicMock(name="ui", return_value=None)
-		log = mock.MagicMock(name="log", return_value=None)
-		reviewCursor = mock.MagicMock(name="reviewCursor", spec=wrapped_TextInfo)
-		startMark = mock.MagicMock(name="startMark", spec=wrapped_TextInfo)
-		# setup return values
-		reviewCursor.compareEndPoints.return_value = -1 # behind the start marker
-		startMarkCopy = mock.MagicMock(name="startMarkCopy", spec=wrapped_TextInfo)
-		startMarkCopy.compareEndPoints.return_value = 1 # selection to copy has range
-		startMark.copy.return_value = startMarkCopy
-		objMock = mock.MagicMock(name="obj")
-		reviewCursor.attach_mock(objMock, "obj")
-		reviewCursor.obj._copyStartMarker = startMark
-		del objMock._selectThenCopyRange
-		del objMock.waitForAndSpeakSelectionChange
+		self.startMark.set(start=5, end=5)
+		self.reviewCursor.set(start=2, end=2)
+		del self.objMock._selectThenCopyRange
+		del self.objMock.waitForAndSpeakSelectionChange
 		# do
-		markerBasedSelectAndCopy.doSelectThenCopy(scriptRepeatCount, reviewCursor, ui, log)
+		markerBasedSelectAndCopy.doSelectThenCopy(self.scriptRepeatCount, self.reviewCursor, self.ui, self.log)
 		# expect
-		ui.assert_has_calls([mock.call.message(u'Selection made')])
-		startMark.assert_has_calls([mock.call.copy()], any_order=True)
-		startMarkCopy.assert_has_calls([mock.call.setEndPoint(startMark, "endToEnd"), mock.call.setEndPoint(reviewCursor, "startToStart"), mock.call.move(UNIT_CHARACTER, 1, endpoint="end"), mock.call.updateSelection()], any_order=True)
+		self.ui.assert_has_calls([mock.call.message(u'Selection made')])
+		assert self.objMock._selectThenCopyRange != None
+		self.objMock._selectThenCopyRange.assert_has_calls([mock.call.updateSelection])
+		assert self.objMock._selectThenCopyRange.start == 2
+		assert self.objMock._selectThenCopyRange.end == 6
 	
 	def test_noStartMarkerSet(self):
 		# given
-		scriptRepeatCount = 0
-		ui = mock.MagicMock(return_value=None)
-		log = mock.MagicMock(return_value=None)
-		reviewCursor = mock.MagicMock(spec=context.textInfos.TextInfo)
-		del reviewCursor.obj._copyStartMarker
+		del self.reviewCursor.obj._copyStartMarker
 		# do
-		markerBasedSelectAndCopy.doSelectThenCopy(scriptRepeatCount, reviewCursor, ui, log)
+		markerBasedSelectAndCopy.doSelectThenCopy(self.scriptRepeatCount, self.reviewCursor, self.ui, self.log)
 		# expect
-		ui.assert_has_calls([mock.call.message(u'No start marker set')])
+		self.ui.assert_has_calls([mock.call.message(u'No start marker set')])
 	
 	def test_selectAlreadyPerformed(self):
 		# given
-		scriptRepeatCount = 0
-		ui = mock.MagicMock(return_value=None)
-		log = mock.MagicMock(return_value=None)
-		reviewCursor = mock.MagicMock(spec=context.textInfos.TextInfo)
 		# _copyStartMarker exists
 		# _selectThenCopyRange exists
 		# do
-		markerBasedSelectAndCopy.doSelectThenCopy(scriptRepeatCount, reviewCursor, ui, log)
+		markerBasedSelectAndCopy.doSelectThenCopy(self.scriptRepeatCount, self.reviewCursor, self.ui, self.log)
 		# expect
-		ui.assert_has_calls([mock.call.message(u'Press twice to copy, or reset the start marker')])
+		self.ui.assert_has_calls([mock.call.message(u'Press twice to copy, or reset the start marker')])
 
 
 if __name__ == '__main__':
