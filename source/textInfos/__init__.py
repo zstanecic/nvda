@@ -14,7 +14,7 @@ import weakref
 import re
 import baseObject
 import config
-import speech
+#import speech
 import controlTypes
 
 class Field(dict):
@@ -424,7 +424,8 @@ class TextInfo(baseObject.AutoPropertyObject):
 			unitInfo.collapse(end=True)
 
 	def getControlFieldSpeech(self, attrs, ancestorAttrs, fieldType, formatConfig=None, extraDetail=False, reason=None):
-		return speech.getControlFieldSpeech(attrs, ancestorAttrs, fieldType, formatConfig, extraDetail, reason)
+		#return speech.getControlFieldSpeech(attrs, ancestorAttrs, fieldType, formatConfig, extraDetail, reason)
+		pass
 
 	def getControlFieldBraille(self, field, ancestors, reportStart, formatConfig):
 		# Import late to avoid circular import.
