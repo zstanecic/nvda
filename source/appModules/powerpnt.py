@@ -1,6 +1,6 @@
 #appModules/powerpnt.py
 #A part of NonVisual Desktop Access (NVDA)
-#Copyright (C) 2012-2015 NV Access Limited
+#Copyright (C) 2012-2018 NV Access Limited
 #This file is covered by the GNU General Public License.
 #See the file COPYING for more details.
 
@@ -33,6 +33,7 @@ from cursorManager import ReviewCursorManager
 import controlTypes
 from logHandler import log
 import scriptHandler
+from NVDAObjects.window._msOfficeChart import OfficeChart
 
 # Window classes where PowerPoint's object model should be used 
 # These also all request to have their (incomplete) UI Automation implementations  disabled. [MS Office 2013]
@@ -330,6 +331,8 @@ class DocumentWindow(PaneClassDC):
 			#Specifically handle shapes representing a table as they have row and column counts etc
 			if ppObj.hasTable:
 				return Table(windowHandle=self.windowHandle,documentWindow=self,ppObject=ppObj)
+			elif ppObj.hasChart:
+				return ChartShape(windowHandle=self.windowHandle,documentWindow=self,ppObject=ppObj)
 			else: #Generic shape
 				return Shape(windowHandle=self.windowHandle,documentWindow=self,ppObject=ppObj)
 		elif selType==ppSelectionText: #Text frame
@@ -838,6 +841,35 @@ class Shape(PpObject):
 		"kb:f2":"selectionChange",
 	}
 
+class ChartShape(Shape):
+	"""
+	A PowerPoint Shape that holds an MS Office Chart.
+	When focused, press enter to interact with the actual chart.
+	"""
+
+	def _get_name(self):
+		chartObj=self.chart.officeChartObject
+		if chartObj.hasTitle:
+			return chartObj.chartTitle.text
+		return super(ChartShape,self).name
+
+	role=controlTypes.ROLE_CHART
+
+	def _get_chart(self):
+		return OfficeChart(windowHandle=self.windowHandle , officeApplicationObject = self.ppObject.Application , officeChartObject = self.ppObject.chart, initialDocument=self )
+
+	def focusOnActiveDocument(self,chart):
+		self.ppObject.select()
+		eventHandler.executeEvent("gainFocus",self)
+
+	def script_enterChart(self,gesture):
+		eventHandler.executeEvent("gainFocus",self.chart)
+
+	__gestures={
+		"kb:enter":"enterChart",
+		"kb:space":"enterChart",
+	}
+
 class TextFrameTextInfo(textInfos.offsets.OffsetsTextInfo):
 
 	def _getCaretOffset(self):
@@ -1229,7 +1261,7 @@ class AppModule(appModuleHandler.AppModule):
 		import gui
 		# Translators: A title for a dialog shown while Microsoft PowerPoint initializes
 		d=wx.Dialog(None,title=_("Waiting for Powerpoint..."))
-		d.Center(wx.BOTH | wx.CENTER_ON_SCREEN)
+		d.CentreOnScreen()
 		gui.mainFrame.prePopup()
 		d.Show()
 		self.hasTriedPpAppSwitch=True
