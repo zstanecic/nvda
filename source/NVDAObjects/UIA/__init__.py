@@ -31,6 +31,7 @@ from NVDAObjects import NVDAObjectTextInfo, InvalidNVDAObject
 from NVDAObjects.behaviors import ProgressBar, EditableTextWithoutAutoSelectDetection, Dialog, Notification, EditableTextWithSuggestions
 import braille
 import time
+from locationHelper import RectLTWH
 import ui
 
 class UIATextInfo(textInfos.TextInfo):
@@ -341,8 +342,12 @@ class UIATextInfo(textInfos.TextInfo):
 		# Thus we must check getChildren before getEnclosingElement.
 		tempInfo.expand(textInfos.UNIT_CHARACTER)
 		tempRange=tempInfo._rangeObj
-		children=getChildrenWithCacheFromUIATextRange(tempRange,UIAHandler.handler.baseCacheRequest)
-		if children.length==1:
+		try:
+			children=getChildrenWithCacheFromUIATextRange(tempRange,UIAHandler.handler.baseCacheRequest)
+		except COMError as e:
+			log.debugWarning("Could not get children from UIA text range, %s"%e)
+			children=None
+		if children and children.length==1:
 			child=children.getElement(0)
 		else:
 			child=getEnclosingElementWithCacheFromUIATextRange(tempRange,UIAHandler.handler.baseCacheRequest)
@@ -448,7 +453,7 @@ class UIATextInfo(textInfos.TextInfo):
 		log.debug("With further units of: %s"%furtherUIAFormatUnits)
 		rangeIter=iterUIARangeByUnit(textRange,unit) if unit is not None else [textRange]
 		for tempRange in rangeIter:
-			text=self._getTextFromUIARange(tempRange)
+			text=self._getTextFromUIARange(tempRange) or ""
 			if text:
 				log.debug("Chunk has text. Fetching formatting")
 				try:
@@ -1296,12 +1301,7 @@ class UIA(Window):
 		if r is None:
 			return
 		# r is a tuple of floats representing left, top, width and height.
-		# However, most NVDA code expecs location coordinates to be ints 
-		left=int(r[0])
-		top=int(r[1])
-		width=int(r[2])
-		height=int(r[3])
-		return left,top,width,height
+		return RectLTWH.fromFloatCollection(*r)
 
 	def _get_value(self):
 		val=self._getUIACacheablePropertyValue(UIAHandler.UIA_RangeValueValuePropertyId,True)
