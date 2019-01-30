@@ -620,12 +620,14 @@ int WINAPI fake_FillRect(HDC hdc, const RECT* lprc, HBRUSH hBrush) {
 	int res=real_FillRect(hdc,lprc,hBrush);
 	//IfThe fill was successull we can go on.
 	if(res==0||lprc==NULL) return res;
+	//Do not clear the rectangle in the DC's display model when the background is transparent.
+	if(GetBkMode(hdc)==TRANSPARENT) return res;
 	//Try and get a displayModel for this DC, and if we can, then record the original text for these glyphs
 	displayModel_t* model=acquireDisplayModel(hdc,TRUE);
 	if(!model) return res;
 	RECT rect=*lprc;
 	dcPointsToScreenPoints(hdc,(LPPOINT)&rect,2,false);
-	//model->clearRectangle(rect);
+	model->clearRectangle(rect);
 	model->release();
 	return res;
 }
