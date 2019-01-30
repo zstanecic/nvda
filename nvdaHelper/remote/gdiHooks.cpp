@@ -704,7 +704,7 @@ HDC WINAPI fake_BeginPaint(HWND hwnd, LPPAINTSTRUCT lpPaint) {
 	RECT rect=lpPaint->rcPaint;
 	ClientToScreen(hwnd,(LPPOINT)&rect);
 	ClientToScreen(hwnd,((LPPOINT)&rect)+1);
-	model->clearRectangle(rect);
+	//model->clearRectangle(rect);
 	model->release();
 	return res;
 }
