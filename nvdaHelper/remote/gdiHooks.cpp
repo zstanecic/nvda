@@ -625,7 +625,7 @@ int WINAPI fake_FillRect(HDC hdc, const RECT* lprc, HBRUSH hBrush) {
 	if(!model) return res;
 	RECT rect=*lprc;
 	dcPointsToScreenPoints(hdc,(LPPOINT)&rect,2,false);
-	//model->clearRectangle(rect);
+	model->clearRectangle(rect);
 	model->release();
 	return res;
 }
@@ -704,7 +704,7 @@ HDC WINAPI fake_BeginPaint(HWND hwnd, LPPAINTSTRUCT lpPaint) {
 	RECT rect=lpPaint->rcPaint;
 	ClientToScreen(hwnd,(LPPOINT)&rect);
 	ClientToScreen(hwnd,((LPPOINT)&rect)+1);
-	//model->clearRectangle(rect);
+	model->clearRectangle(rect);
 	model->release();
 	return res;
 }
