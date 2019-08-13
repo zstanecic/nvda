@@ -540,7 +540,7 @@ def speak(speechSequence, symbolLevel=None, priority=None):
 		return
 	import inputCore
 	inputCore.logTimeSinceInput()
-	log.io("Speaking %r" % speechSequence)
+	log.io("Speaking %r" % speechSequence)  #, stack_info=True)
 	if symbolLevel is None:
 		symbolLevel=config.conf["speech"]["symbolLevel"]
 	curLanguage=defaultLanguage
@@ -1021,6 +1021,11 @@ def speakTextInfo(info, useCache=True, formatConfig=None, unit=None, reason=cont
 	if not onlyCache and speechSequence:
 		if reason==controlTypes.REASON_SAYALL:
 			return speakWithoutPauses(speechSequence)
+		elif(
+				reason == controlTypes.REASON_FOCUS
+				and not info.focusableNVDAObjectAtStart.isGainFocusValid()
+		):
+			return False
 		else:
 			speak(speechSequence,priority=priority)
 			return True

@@ -8,6 +8,8 @@
 """
 
 from ctypes import c_short
+
+from winUser import CHILDID_SELF
 from comtypes import COMError, BSTR
 import oleacc
 import IAccessibleHandler
@@ -63,6 +65,27 @@ class Ia2Web(IAccessible):
 		if self.IA2Attributes.get('goog-editable')=="false":
 			states.discard(controlTypes.STATE_EDITABLE)
 		return states
+
+	def isGainFocusValid(self):
+		accFocusID = self.IAccessibleObject.accFocus
+		if log.isEnabledFor(log.DEBUG):
+			eventParams = (
+					f"windowHandle={self.event_windowHandle!r}, "
+					f"objectID={self.event_objectID!r}, "
+					f"childID={self.event_childID!r}"
+			)
+			log.debug(
+				f"Should allow: {self.name}, "
+				f"accFocusID: {accFocusID}, "
+				f"eventParams: {eventParams}, "
+				f"ObjWith Focus: {self.objectWithFocus().name}"
+			)
+		return accFocusID == CHILDID_SELF
+
+	def _get_shouldAllowIAccessibleFocusEvent(self):
+		"""Override
+		"""
+		return self.isGainFocusValid()
 
 class Document(Ia2Web):
 	value = None

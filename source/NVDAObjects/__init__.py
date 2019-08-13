@@ -802,6 +802,9 @@ class NVDAObject(documentBase.TextContainerObject, baseObject.ScriptableObject, 
 		"""
 		return None
 
+	def isGainFocusValid(self):
+		return True
+
 	def _get_isFocusable(self):
 		"""Whether this object is focusable.
 		@rtype: bool

@@ -36,6 +36,12 @@ def queueEvent(eventName,obj,**kwargs):
 	global lastQueuedFocusObject
 	if eventName=="gainFocus":
 		lastQueuedFocusObject=obj
+		# log.debug(
+		# 	f"Queueing GF for {obj.name}, "
+		# 	f"window: {obj.event_windowHandle}, "
+		# 	f"objectID: {obj.event_objectID}, "
+		# 	f"childID: {obj.event_childID}"
+		# )
 	with _pendingEventCountsLock:
 		_pendingEventCountsByName[eventName]=_pendingEventCountsByName.get(eventName,0)+1
 		_pendingEventCountsByObj[obj]=_pendingEventCountsByObj.get(obj,0)+1
@@ -59,6 +65,9 @@ def _queueEventCallback(eventName,obj,kwargs):
 			_pendingEventCountsByNameAndObj[(eventName,obj)]=(curCount-1)
 		elif curCount==1:
 			del _pendingEventCountsByNameAndObj[(eventName,obj)]
+	# if eventName == "gainFocus" and obj != lastQueuedFocusObject:
+	# 	log.debug(f"obj does not match: {obj.name} != {lastQueuedFocusObject.name}")
+	# 	return
 	executeEvent(eventName,obj,**kwargs)
 
 def isPendingEvents(eventName=None,obj=None):
@@ -134,6 +143,9 @@ class _EventExecuter(object):
 		if func:
 			yield func, ()
 
+# from timeit import default_timer
+# startTime = default_timer()
+
 def executeEvent(eventName,obj,**kwargs):
 	"""Executes an NVDA event.
 	@param eventName: the name of the event type (e.g. 'gainFocus', 'nameChange')
@@ -143,21 +155,31 @@ def executeEvent(eventName,obj,**kwargs):
 	@param kwargs: Additional event parameters as keyword arguments.
 	"""
 	try:
+		isGainFocus = eventName == "gainFocus"
 		# Allow NVDAObjects to redirect focus events to another object of their choosing.
-		if eventName=="gainFocus" and obj.focusRedirect:
+		if isGainFocus and obj.focusRedirect:
 			obj=obj.focusRedirect
 		sleepMode=obj.sleepMode
-		if eventName=="gainFocus" and not doPreGainFocus(obj,sleepMode=sleepMode):
+		if isGainFocus and not obj.isGainFocusValid():
+			log.debug(
+				"Skipped speaking object that is no longer focused"
+			)
+			return
+		if isGainFocus and not doPreGainFocus(obj,sleepMode=sleepMode):
 			return
 		elif not sleepMode and eventName=="documentLoadComplete" and not doPreDocumentLoadComplete(obj):
 			return
 		elif not sleepMode:
+			# if isGainFocus:
+			# 	log.debug(
+			# 		f"Execute Event: {eventName}, "
+			# 		f"{obj.name} "
+			# 	)
 			_EventExecuter(eventName,obj,kwargs)
 	except:
 		log.exception("error executing event: %s on %s with extra args of %s"%(eventName,obj,kwargs))
 
 def doPreGainFocus(obj,sleepMode=False):
-	oldForeground=api.getForegroundObject()
 	oldFocus=api.getFocusObject()
 	oldTreeInterceptor=oldFocus.treeInterceptor if oldFocus else None
 	api.setFocusObject(obj)

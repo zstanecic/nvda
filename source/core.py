@@ -491,6 +491,7 @@ This initializes all modules such as audio, IAccessible, keyboard, mouse, and GU
 			global _isPumpPending
 			_isPumpPending = False
 			watchdog.alive()
+			log.debug("Core start")
 			try:
 				if touchHandler.handler:
 					touchHandler.handler.pump()
@@ -502,6 +503,7 @@ This initializes all modules such as audio, IAccessible, keyboard, mouse, and GU
 			except:
 				log.exception("errors in this core pump cycle")
 			baseObject.AutoPropertyObject.invalidateCaches()
+			log.debug("Core end")
 			watchdog.asleep()
 			if _isPumpPending and not _pump.IsRunning():
 				# #3803: Another pump was requested during this pump execution.

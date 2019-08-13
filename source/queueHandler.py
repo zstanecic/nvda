@@ -42,14 +42,18 @@ def isRunningGenerators():
 	log.debug("generators running: %s"%res)
 
 def flushQueue(queue):
+	#gainFocusCount = 0
 	for count in range(queue.qsize()+1):
 		if not queue.empty():
 			(func,args,kwargs)=queue.get_nowait()
+			#if "gainFocus" in args:
+				#gainFocusCount += 1
 			watchdog.alive()
 			try:
 				func(*args,**kwargs)
 			except:
 				log.exception("Error in func %s from %s"%(func.__name__,queue.__name__))
+	#assert gainFocusCount <= 1, f"gain focus too many: {gainFocusCount}"
 
 def isPendingItems(queue):
 	if not queue.empty():
