@@ -1027,7 +1027,7 @@ def speakTextInfo(info, useCache=True, formatConfig=None, unit=None, reason=cont
 		):
 			return False
 		else:
-			speak(speechSequence,priority=priority)
+			speak(speechSequence, priority=priority)
 			return True
 
 def getSpeechTextForProperties(reason=controlTypes.REASON_QUERY,**propertyValues):

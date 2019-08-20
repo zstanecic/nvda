@@ -187,7 +187,7 @@ class UIAHandler(COMObject):
 
 	def MTAThreadFunc(self):
 		try:
-			oledll.ole32.CoInitializeEx(None,comtypes.COINIT_MULTITHREADED) 
+			oledll.ole32.CoInitializeEx(None, comtypes.COINIT_MULTITHREADED | comtypes.COINIT_SPEED_OVER_MEMORY)
 			isUIA8=False
 			try:
 				self.clientObject=CoCreateInstance(CUIAutomation8._reg_clsid_,interface=IUIAutomation,clsctx=CLSCTX_INPROC_SERVER)

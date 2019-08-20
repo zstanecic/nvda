@@ -225,9 +225,6 @@ IAccessible2StatesToNVDAStates={
 	IA2_STATE_PINNED:controlTypes.STATE_PINNED,
 }
 
-#A list to store handles received from setWinEventHook, for use with unHookWinEvent  
-winEventHookIDs=[]
-
 def normalizeIAccessible(pacc,childID=0):
 	if not isinstance(pacc,IAccessible):
 		try:
@@ -452,7 +449,7 @@ def winEventToNVDAEvent(eventID,window,objectID,childID,useCache=True):
 		if SDMChild: obj=SDMChild
 	return (NVDAEventName,obj)
 
-def winEventCallback(handle,eventID,window,objectID,childID,threadID,timestamp):
+def winEventCallback(eventID,window,objectID,childID,threadID,timestamp):
 	try:
 		if eventID == winUser.EVENT_OBJECT_FOCUS:
 			log.debug(
@@ -463,12 +460,6 @@ def winEventCallback(handle,eventID,window,objectID,childID,threadID,timestamp):
 				f"threadID: {threadID}, "
 				f"timestamp: {timestamp}"
 			)
-		#Ignore all object IDs from alert onwards (sound, nativeom etc) as we don't support them
-		if objectID<=winUser.OBJID_ALERT: 
-			return
-		#Ignore all locationChange events except ones for the caret
-		if eventID==winUser.EVENT_OBJECT_LOCATIONCHANGE and objectID!=winUser.OBJID_CARET:
-			return
 		if eventID==winUser.EVENT_OBJECT_DESTROY:
 			processDestroyWinEvent(window,objectID,childID)
 			return
@@ -757,14 +748,51 @@ def initialize():
 		accPropServices=comtypes.client.CreateObject(CAccPropServices)
 	except (WindowsError,COMError) as e:
 		log.debugWarning("AccPropServices is not available: %s"%e)
-	for eventType in winEventIDsToNVDAEventNames:
-		hookID=winUser.setWinEventHook(eventType,eventType,0,cWinEventCallback,0,0,0)
-		if hookID:
-			winEventHookIDs.append(hookID)
-		else:
-			log.error("initialize: could not register callback for event %s (%s)"%(eventType,winEventIDsToNVDAEventNames[eventType]))
+
+	import EventHandlerDllWrapper
+	global eventHandlerDll
+	eventHandlerDll = EventHandlerDllWrapper.getEventHandlerDll()
+	if not eventHandlerDll:
+		log.error(
+			f"initialize: Could not import eventHandlerDll"
+		)
+		return
+	ret = eventHandlerDll.InitializeMSAA()
+	if ret != 0:
+		log.error(
+			f"initialize: Could not initialise eventHandlerDll, error({ret})"
+		)
 
 def pumpAll():
+	from EventHandlerDllWrapper import EventData
+	e = EventData()
+	global eventHandlerDll
+	eventHandlerDll.SwapEventBuffers()
+	eventCount = eventHandlerDll.GetEventCount()
+	log.debug(f"Events to process: {eventCount}")
+	for i in range(0, eventCount):
+		eventHandlerDll.GetEvent(i, byref(e))
+		try:
+			winEventCallback(
+				int(e.idEvent),
+				0 if not e.hwnd else int(e.hwnd),
+				int(e.idObject),
+				int(e.idChild),
+				int(e.dwEventThread),
+				int(e.dwmsEventTime)
+			)
+		except:
+			eventHandlerDll.PrintEvent(i)
+			log.error(
+				f"winEventCallback: {e!r}"
+				f" {e.idEvent}"
+				f", {e.hwnd}"
+				f", {e.idObject}"
+				f", {e.idChild}"
+				f", {e.dwEventThread}"
+				f", {e.dwmsEventTime}"
+			)
+
 	global _deferUntilForegroundWindow,_foregroundDefers
 	if _deferUntilForegroundWindow:
 		# #3831: Sometimes, a foreground event is fired,
@@ -849,8 +877,10 @@ def pumpAll():
 			processFakeFocusWinEvent(*fakeFocusEvent)
 
 def terminate():
-	for handle in winEventHookIDs:
-		winUser.unhookWinEvent(handle)
+	global eventHandlerDll
+	if not eventHandlerDll or 0 != eventHandlerDll.ShutdownMSAA():
+		log.error("unable to terminate eventHandlerDll")
+	eventHandlerDll = None
 
 def getIAccIdentity(pacc,childID):
 	IAccIdentityObject=pacc.QueryInterface(IAccIdentity)

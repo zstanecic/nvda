@@ -287,7 +287,7 @@ class CancellableCallThread(threading.Thread):
 		return self._result
 
 	def run(self):
-		comtypes.CoInitializeEx(comtypes.COINIT_MULTITHREADED)
+		comtypes.CoInitializeEx(comtypes.COINIT_MULTITHREADED | comtypes.COINIT_SPEED_OVER_MEMORY)
 		while self.isUsable:
 			self._executeEvent.wait()
 			self._executeEvent.clear()
