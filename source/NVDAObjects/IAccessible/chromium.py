@@ -35,6 +35,7 @@ class ChromeVBuf(GeckoVBuf):
 class Document(ia2Web.Document):
 
 	def _get_treeInterceptorClass(self):
+		# return None # Disabling vbuf fixes lag
 		states = self.states
 		if controlTypes.STATE_EDITABLE not in states and controlTypes.STATE_BUSY not in states:
 			return ChromeVBuf

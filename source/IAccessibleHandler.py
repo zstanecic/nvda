@@ -757,41 +757,14 @@ def initialize():
 			f"initialize: Could not import eventHandlerDll"
 		)
 		return
-	ret = eventHandlerDll.InitializeMSAA()
+	ret = eventHandlerDll.RegisterAndPump_Async()
 	if ret != 0:
 		log.error(
 			f"initialize: Could not initialise eventHandlerDll, error({ret})"
 		)
 
+
 def pumpAll():
-	from EventHandlerDllWrapper import EventData
-	e = EventData()
-	global eventHandlerDll
-	eventHandlerDll.SwapEventBuffers()
-	eventCount = eventHandlerDll.GetEventCount()
-	log.debug(f"Events to process: {eventCount}")
-	for i in range(0, eventCount):
-		eventHandlerDll.GetEvent(i, byref(e))
-		try:
-			winEventCallback(
-				int(e.idEvent),
-				0 if not e.hwnd else int(e.hwnd),
-				int(e.idObject),
-				int(e.idChild),
-				int(e.dwEventThread),
-				int(e.dwmsEventTime)
-			)
-		except:
-			eventHandlerDll.PrintEvent(i)
-			log.error(
-				f"winEventCallback: {e!r}"
-				f" {e.idEvent}"
-				f", {e.hwnd}"
-				f", {e.idObject}"
-				f", {e.idChild}"
-				f", {e.dwEventThread}"
-				f", {e.dwmsEventTime}"
-			)
 
 	global _deferUntilForegroundWindow,_foregroundDefers
 	if _deferUntilForegroundWindow:
@@ -809,12 +782,43 @@ def pumpAll():
 			_deferUntilForegroundWindow=None
 
 	#Receive all the winEvents from the limiter for this cycle
-	winEvents=winEventLimiter.flushEvents()
 	focusWinEvents=[]
 	validFocus=False
 	fakeFocusEvent=None
 	focus=eventHandler.lastQueuedFocusObject
-	for winEvent in winEvents[0-MAX_WINEVENTS:]:
+
+	from EventHandlerDllWrapper import EventData
+	e = EventData()
+	global eventHandlerDll
+	eventHandlerDll.FlushEvents()
+	eventCount = eventHandlerDll.GetEventCount()
+	#log.debug(f"Events to process: {eventCount}")
+	# get newest events first (play them back in reversed order),
+	# this makes NVDA feel more responsive.
+	for i in reversed(range(min(eventCount, 500))):
+		try:
+			if eventHandlerDll.GetEvent(i, byref(e)):
+				winEvent = (
+					int(e.idEvent),
+					0 if not e.hwnd else int(e.hwnd),
+					int(e.idObject),
+					int(e.idChild),
+				)
+			else:
+				raise RuntimeError(f"Unable to get Event {i} of {eventCount}")
+		except:
+			log.error(
+				f"getting Event index: {i} winEventCallback: {e!r}"
+				f" {e.idEvent}"
+				f", {e.hwnd}"
+				f", {e.idObject}"
+				f", {e.idChild}"
+				f", {e.dwEventThread}"
+				f", {e.dwmsEventTime}"
+			)
+			eventHandlerDll.PrintEvent(i)
+			return
+
 		isEventOnCaret = winEvent[2] == winUser.OBJID_CARET
 		showHideCaretEvent = focus and isEventOnCaret and winEvent[0] in [winUser.EVENT_OBJECT_SHOW, winUser.EVENT_OBJECT_HIDE]
 		# #4001: Ideally, we'd call shouldAcceptEvent in winEventCallback,
@@ -875,11 +879,14 @@ def pumpAll():
 		elif not validFocus:
 			# Other fake focus events only need to be handled if there was no valid focus event.
 			processFakeFocusWinEvent(*fakeFocusEvent)
+	core.requestPump()
 
 def terminate():
 	global eventHandlerDll
-	if not eventHandlerDll or 0 != eventHandlerDll.ShutdownMSAA():
+	if not eventHandlerDll:
 		log.error("unable to terminate eventHandlerDll")
+	else:
+		eventHandlerDll.RegisterAndPump_Join()
 	eventHandlerDll = None
 
 def getIAccIdentity(pacc,childID):

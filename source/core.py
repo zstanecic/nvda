@@ -42,7 +42,7 @@ import extensionPoints
 # inform those who want to know that NVDA has finished starting up.
 postNvdaStartup = extensionPoints.Action()
 
-PUMP_MAX_DELAY = 10
+PUMP_MAX_DELAY = 1
 
 #: The thread identifier of the main thread.
 mainThreadId = threading.get_ident()

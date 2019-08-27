@@ -21,27 +21,27 @@ class EventData(ctypes.Structure):
 
 class EventHandlerDll:
 	def GetEventCount(self) -> c_uint: ...
-	def GetEvent(self, index: c_uint, e: ctypes.POINTER(EventData)) -> None: ...
-	def SwapEventBuffers(self) -> None: ...
-	def InitializeMSAA(self) -> ctypes.c_int: ...
-	def ShutdownMSAA(self) -> None: ...
+	def GetEvent(self, index: c_uint, e: ctypes.POINTER(EventData)) -> ctypes.c_bool: ...
+	def FlushEvents(self) -> None: ...
+	def RegisterAndPump_Async(self) -> None: ...
+	def RegisterAndPump_Join(self) -> None: ...
 
 
 def getEventHandlerDll() -> EventHandlerDll:
-	dll = ctypes.cdll.LoadLibrary(r"C:\work\test projects\WinEventLogger\Release\eventHandler.dll")
+	dll = ctypes.cdll.LoadLibrary(r"eventHandler.dll")
 
-	dll.GetEvent.restype = None
+	dll.GetEvent.restype = ctypes.c_bool
 	dll.GetEvent.argtypes = ctypes.c_uint, ctypes.POINTER(EventData),
 
 	dll.GetEventCount.restype = ctypes.c_uint
 	dll.GetEventCount.argtypes = None
 
-	dll.SwapEventBuffers.restype = None
-	dll.SwapEventBuffers.argtypes = None
+	dll.FlushEvents.restype = None
+	dll.FlushEvents.argtypes = None
 
-	dll.InitializeMSAA.restype = ctypes.c_int
-	dll.InitializeMSAA.argtypes = None
+	dll.RegisterAndPump_Async.restype = ctypes.c_int
+	dll.RegisterAndPump_Async.argtypes = None
 
-	dll.ShutdownMSAA.restype = ctypes.c_uint
-	dll.ShutdownMSAA.argtypes = None
+	dll.RegisterAndPump_Join.restype = None
+	dll.RegisterAndPump_Join.argtypes = None
 	return dll
