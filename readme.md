@@ -37,7 +37,7 @@ The following dependencies need to be installed on your system:
 
 * [Python](http://www.python.org/), version 3.7, 32 bit
 	* Use latest minor version if possible.
-* Microsoft Visual Studio 2019 Community, Version 16.2 or later:
+* Microsoft Visual Studio 2019 Community, Version 16.3 or later:
 	* Download from https://visualstudio.microsoft.com/downloads/
 	* When installing Visual Studio, you need to enable the following:
 		* On the Workloads tab
