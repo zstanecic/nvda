@@ -22,8 +22,7 @@ Variables	webTestVariables.py
 checkbox labelled by inner element
 	[Documentation]	A checkbox labelled by an inner element should not read the label element twice.
 	start chrome	checkboxLabelledByInnerElement.html
-	${chrome page title} =	catenate double space	test case  Google Chrome
-	${INDEX} =	wait for specific speech	${chrome page title}
+	${INDEX} =	wait for specific speech	${TEST_CASE_CHROME_TITLE}
 	wait for speech to finish
 
 	${post read all index} =	get next speech index
