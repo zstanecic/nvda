@@ -9,3 +9,7 @@ CHECK_BOX_LABELLED_BY_INNER_ELEMENT_SPEECH = (
 	# Instead this should be spoken as:
 	# "Simulate evil cat  check box  not checked"
 )
+
+TEST_CASE_CHROME_TITLE = (
+	"test case   Google Chrome  "
+)
