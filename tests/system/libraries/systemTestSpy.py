@@ -7,6 +7,8 @@
 It is copied into the (system test specific) NVDA profile directory. It becomes the '__init__.py' file as part of a
 package. This allows us to share utility methods between the global plugin and the nvdaRobotLib library.
 """
+from typing import Optional
+
 import globalPluginHandler
 import threading
 from .systemTestUtils import _blockUntilConditionMet
@@ -82,7 +84,7 @@ class SystemTestSpy(object):
 		with threading.Lock():
 			return self._getJoinedBaseStringsFromCommands(self._nvdaSpeech[speechIndex])
 
-	def getSpeechSinceIndex(self, speechIndex):
+	def getSpeechAtIndexUntilNow(self, speechIndex):
 		with threading.Lock():
 			speechCommands = self._flattenCommandsSeparatingWithNewline(
 				self._nvdaSpeech[speechIndex:]
@@ -94,10 +96,14 @@ class SystemTestSpy(object):
 		with threading.Lock():
 			return len(self._nvdaSpeech) - 1
 
-	def getIndexOfSpeech(self, speech, startFromIndex=0):
+	def getIndexOfSpeech(self, speech, searchAfterIndex: Optional[int] = None):
+		if searchAfterIndex is None:
+			firstIndexToCheck = 0
+		else:
+			firstIndexToCheck = 1 + searchAfterIndex
 		with threading.Lock():
-			for index, commands in enumerate(self._nvdaSpeech[startFromIndex:]):
-				index = index + startFromIndex
+			for index, commands in enumerate(self._nvdaSpeech[firstIndexToCheck:]):
+				index = index + firstIndexToCheck
 				baseStrings = [c.strip() for c in commands if isinstance(c, str)]
 				if any(speech in x for x in baseStrings):
 					return index
@@ -141,10 +147,11 @@ class NvdaSpyLib(object):
 		return self._spy.getSpeechAtIndex(-1)
 
 	def get_all_speech(self):
-		return self._spy.getSpeechSinceIndex(self._allSpeechStartIndex)
+		return self._spy.getSpeechAtIndexUntilNow(self._allSpeechStartIndex)
 
 	def get_speech_from_index_until_now(self, speechIndex):
-		return self._spy.getSpeechSinceIndex(speechIndex)
+		"""Inclusive of index"""
+		return self._spy.getSpeechAtIndexUntilNow(speechIndex)
 
 	def reset_all_speech_index(self):
 		self._allSpeechStartIndex = self._spy.getIndexOfLastSpeech()
@@ -153,12 +160,28 @@ class NvdaSpyLib(object):
 	def get_last_speech_index(self):
 		return self._spy.getIndexOfLastSpeech()
 
-	def wait_for_specific_speech(self, speech, sinceIndex=None, maxWaitSeconds=5):
-		sinceIndex = 0 if not sinceIndex else sinceIndex
+	def get_next_speech_index(self) -> int:
+		"""
+		@return: the next index that will be used.
+		"""
+		return self.get_last_speech_index() + 1
+
+	def wait_for_specific_speech(
+			self,
+			speech: str,
+			afterIndex: Optional[int] = None,
+			maxWaitSeconds: int = 5,
+	) -> int:
+		"""
+		@param speech: The speech to expect.
+		@param afterIndex: The speech should come after this index. The index is exclusive.
+		@param maxWaitSeconds: The amount of time to wait in seconds.
+		@return: the index of the speech.
+		"""
 		success, speechIndex = _blockUntilConditionMet(
-			getValue=lambda: self._spy.getIndexOfSpeech(speech, sinceIndex),
+			getValue=lambda: self._spy.getIndexOfSpeech(speech, afterIndex),
 			giveUpAfterSeconds=self._minTimeout(maxWaitSeconds),
-			shouldStopEvaluator=lambda speechIndex: speechIndex >= 0,
+			shouldStopEvaluator=lambda indexFound: indexFound >= (afterIndex if afterIndex else 0),
 			intervalBetweenSeconds=0.1,
 			errorMessage=None
 		)

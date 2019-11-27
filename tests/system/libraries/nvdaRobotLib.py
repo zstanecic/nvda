@@ -224,3 +224,14 @@ class nvdaRobotLib(object):
 		self.save_NVDA_log()
 		# remove the spy so that if nvda is run manually against this config it does not interfere.
 		self.teardown_nvda_profile()
+
+	def start_chrome(self, testCase):
+		testCase = _pJoin(systemTestSourceDir, "testCases", testCase),
+		builtIn.log(f"starting chrome: {testCase}")
+		self.chromeHandle = handle = process.start_process(
+			f"start chrome \"{testCase[0]}\"",
+			shell=True,
+			alias='chromeAlias',
+		)
+		process.process_should_be_running(handle)
+		return handle

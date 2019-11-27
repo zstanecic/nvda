@@ -1,3 +1,8 @@
+# A part of NonVisual Desktop Access (NVDA)
+# Copyright (C) 2019 NV Access Limited
+# This file may be used under the terms of the GNU General Public License, version 2 or later.
+# For more details see: https://www.gnu.org/licenses/gpl-2.0.html
+
 WELCOME_DIALOG_TEXT = (
 	"Welcome to NVDA  dialog  Welcome to NVDA! Most commands for controlling NVDA require you to hold "
 	"down the NVDA key while pressing other keys. By default, the numpad Insert and main Insert keys "
