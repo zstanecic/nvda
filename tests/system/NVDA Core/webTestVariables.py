@@ -11,5 +11,5 @@ CHECK_BOX_LABELLED_BY_INNER_ELEMENT_SPEECH = (
 )
 
 TEST_CASE_CHROME_TITLE = (
-	"test case - Google Chrome"
+	"test case   Google Chrome"
 )
