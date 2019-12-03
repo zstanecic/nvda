@@ -1,7 +1,7 @@
-#A part of NonVisual Desktop Access (NVDA)
-#Copyright (C) 2019 NV Access Limited, Leonard de RUijter
-#This file is covered by the GNU General Public License.
-#See the file COPYING for more details.
+# A part of NonVisual Desktop Access (NVDA)
+# Copyright (C) 2019 NV Access Limited, Leonard de Ruijter
+# This file is covered by the GNU General Public License.
+# See the file COPYING for more details.
 
 # Configuration file for the Sphinx documentation builder.
 
@@ -10,14 +10,16 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../source'))
-import sourceEnv
+import sourceEnv  # noqa: F401, E402
 
 # Initialize languageHandler so that sphinx is able to deal with translatable strings.
-import languageHandler
+import languageHandler  # noqa: E402
 languageHandler.setLanguage("en")
 
 # Initialize globalvars.appArgs to something sensible.
-import globalVars
+import globalVars  # noqa: E402
+
+
 class AppArgs:
 	# Set an empty comnfig path
 	# This is never used as we don't initialize config, but some modules expect this to be set.
@@ -25,10 +27,12 @@ class AppArgs:
 	secure = False
 	disableAddons = True
 	launcher = False
+
+
 globalVars.appArgs = AppArgs()
 
 # Import NVDA's versionInfo module.
-import versionInfo
+import versionInfo  # noqa: E402
 # Set a suitable updateVersionType for the updateCheck module to be imported
 versionInfo.updateVersionType = "stable"
 
@@ -39,7 +43,11 @@ copyright = versionInfo.copyright
 author = versionInfo.publisher
 
 # The major project version
-version  = versionInfo.formatVersionForGUI(versionInfo.version_year, versionInfo.version_major, versionInfo.version_minor)
+version = versionInfo.formatVersionForGUI(
+	versionInfo.version_year,
+	versionInfo.version_major,
+	versionInfo.version_minor
+)
 
 # The full version, including alpha/beta/rc tags
 release = versionInfo.version
@@ -81,23 +89,24 @@ html_static_path = ['_static']
 
 # sphinx.ext.autodoc configuration
 
-autoclass_content = "both" # Both the class’ and the __init__ method’s docstring are concatenated and inserted.
+# Both the class’ and the __init__ method’s docstring are concatenated and inserted.
+autoclass_content = "both"
 autodoc_member_order = 'bysource'
 autodoc_mock_imports = [
-	"louis", # Not our project
+	"louis",  # Not our project
 ]
 
 # Perform some manual mocking of specific objects.
 # autodoc can only mock modules, not objects.
-from sphinx.ext.autodoc.mock import _make_subclass
+from sphinx.ext.autodoc.mock import _make_subclass  # noqa: E402
 
-import config
+import config  # noqa: E402
 # Mock an instance of the configuration manager.
-config.conf = _make_subclass("conf","config")()
+config.conf = _make_subclass("conf", "config")()
+
 
 # Support for auto generation of API docs
 # Based on code published in https://github.com/readthedocs/readthedocs.org/issues/1139#issuecomment-398083449
-
 def run_apidoc(_):
 	ignore_paths = [
 		'_buildVersion.py',
@@ -107,24 +116,25 @@ def run_apidoc(_):
 		'lib64',
 		'libArm64',
 		'locale',
-		'louis', # Not our project
+		'louis',  # Not our project
 		'typelibs',
 		'waves',
-		"mathType.py", # Fails when not installed
-		'oleTypes.py', # Not our code
-		'setup.py', # Py2exe
-		'sourceEnv.py', # Only available when running from source
+		"mathType.py",  # Fails when not installed
+		'oleTypes.py',  # Not our code
+		'setup.py',  # Py2exe
+		'sourceEnv.py',  # Only available when running from source
 	]
 	argv = [
-		#"--force", # overwrite existing files
-		"-P", # Include private modules
-		"--module-first", # put module documentation before submodule documentation
+		# "--force",  # overwrite existing files
+		"-P",  # Include private modules
+		"--module-first",  # put module documentation before submodule documentation
 		"--output-dir", ".",
-		sys.path[0] # Module sources
+		sys.path[0]  # Module sources
 	] + [os.path.join(sys.path[0], path) for path in ignore_paths]
 
 	from sphinx.ext import apidoc
 	apidoc.main(argv)
+
 
 def setup(app):
 	app.connect('builder-inited', run_apidoc)
