@@ -80,7 +80,7 @@ build_script:
      }
      $sconsArgs = "version=$env:version"
      if ($env:release) {
-      $sconsOutTargets += " changes userGuide developerGuide client"
+      $sconsOutTargets += " changes userGuide devDocs client"
       $sconsArgs += " release=1"
      }
      if ($env:versionType) {
