@@ -12,6 +12,7 @@
 #http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 ###
 
+import os
 Import("env", "outputDir", "t2tBuildConf")
 
 devDocsInstall = env.SConscript("devDocsInstall/sconscript", exports=["env"])
@@ -20,7 +21,7 @@ env.Alias("devDocsInstall", devDocsInstall)
 
 devDocsOutputDir=outputDir.Dir('devDocs')
 
-#And also build the developer guide -- which must be moved at some point
+#Build the developer guide -- which must be moved at some point
 htmlFile=env.txt2tags('developerGuide.t2t')
 env.Depends(htmlFile, t2tBuildConf)
 env.SideEffect('_txt2tags',htmlFile)
@@ -32,17 +33,17 @@ devDocs_nvdaHelper=env.Command(devDocsOutputDir.Dir('nvdaHelper'),devDocs_nvdaHe
 env.Alias('devDocs_nvdaHelper', devDocs_nvdaHelper)
 env.Clean('devDocs_nvdaHelper', devDocs_nvdaHelper)
 
-#devDocs_nvda = env.Command(devDocsOutputDir.Dir("nvda"), None, [[
-#	"cd", sourceDir.path, "&&",
-#	sys.executable, "-c", "import sourceEnv; from epydoc.cli import cli; cli()",
-#	"--output", "${TARGET.abspath}",
-#	"--quiet", "--html", "--include-log", "--no-frames",
-#	"--name", "NVDA", "--url", "https://www.nvaccess.org/",
-#	"*.py", "appModules", "brailleDisplayDrivers", r"comInterfaces\__init__.py",
-#	"config", "contentRecog", "extensionPoints", "globalPlugins", "gui", "mathPres", "NVDAObjects",
-#	"speechDictHandler", "synthDrivers", "textInfos", "virtualBuffers",
-#]])
+# Add system path to get access to sphinx.
+externalEnv = Environment(
+	ENV = {'PATH' : os.environ['PATH']}
+)
 
-#env.Alias('devDocs', [devGuide, devDocs_nvda])
-#env.Clean('devDocs', [devGuide, devDocs_nvda])
-
+sphinxHtml = externalEnv.Command(
+	"_build/html",
+	None,
+	[["devDocs\\make", "html"]]
+)
+env.Depends(sphinxHtml, devDocsInstall)
+devDocs_nvda = env.Command(devDocsOutputDir.Dir('NVDA'), sphinxHtml, Move('$TARGET', '$SOURCE'))
+env.Alias('devDocs', [devGuide, devDocs_nvda])
+env.Clean('devDocs', [devGuide, devDocs_nvda])
