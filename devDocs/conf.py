@@ -103,38 +103,3 @@ from sphinx.ext.autodoc.mock import _make_subclass  # noqa: E402
 import config  # noqa: E402
 # Mock an instance of the configuration manager.
 config.conf = _make_subclass("conf", "config")()
-
-
-# Support for auto generation of API docs
-# Based on code published in https://github.com/readthedocs/readthedocs.org/issues/1139#issuecomment-398083449
-def run_apidoc(_):
-	ignore_paths = [
-		'_buildVersion.py',
-		'comInterfaces',
-		'images',
-		'lib',
-		'lib64',
-		'libArm64',
-		'locale',
-		'louis',  # Not our project
-		'typelibs',
-		'waves',
-		"mathType.py",  # Fails when not installed
-		'oleTypes.py',  # Not our code
-		'setup.py',  # Py2exe
-		'sourceEnv.py',  # Only available when running from source
-	]
-	argv = [
-		# "--force",  # overwrite existing files
-		"-P",  # Include private modules
-		"--module-first",  # put module documentation before submodule documentation
-		"--output-dir", ".",
-		sys.path[0]  # Module sources
-	] + [os.path.join(sys.path[0], path) for path in ignore_paths]
-
-	from sphinx.ext import apidoc
-	apidoc.main(argv)
-
-
-def setup(app):
-	app.connect('builder-inited', run_apidoc)

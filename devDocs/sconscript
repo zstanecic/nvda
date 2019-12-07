@@ -13,7 +13,11 @@
 ###
 
 import os
-Import("env", "outputDir", "t2tBuildConf")
+import sys
+
+Import("env", "outputDir", "sourceDir", "t2tBuildConf")
+
+env = env.Clone()
 
 devDocsInstall = env.SConscript("devDocsInstall/sconscript", exports=["env"])
 env.Depends(devDocsInstall, env.Dir("devDocs/devDocsInstall/requirements.txt"))
@@ -33,17 +37,50 @@ devDocs_nvdaHelper=env.Command(devDocsOutputDir.Dir('nvdaHelper'),devDocs_nvdaHe
 env.Alias('devDocs_nvdaHelper', devDocs_nvdaHelper)
 env.Clean('devDocs_nvdaHelper', devDocs_nvdaHelper)
 
-# Add system path to get access to sphinx.
-externalEnv = Environment(
-	ENV = {'PATH' : os.environ['PATH']}
-)
+ignorePaths = [
+	'_buildVersion.py',
+	'comInterfaces',
+	'images',
+	'lib',
+	'lib64',
+	'libArm64',
+	'locale',
+	'louis',  # Not our project
+	'typelibs',
+	'waves',
+	"mathType.py",  # Fails when not installed
+	'oleTypes.py',  # Not our code
+	'setup.py',  # Py2exe
+	'sourceEnv.py',  # Only available when running from source
+]
 
-sphinxHtml = externalEnv.Command(
-	"_build/html",
-	None,
-	[["devDocs\\make", "html"]]
+sphinxAPIDocs = env.Command(
+	"api",
+	sourceDir,
+	[
+		[
+			sys.executable,
+			"-m", "sphinx.ext.apidoc",
+			# "--force",  # overwrite existing files
+			"-P",  # Include private modules
+			"--module-first",  # put module documentation before submodule documentation
+			"--output-dir", "$TARGET",
+			"$SOURCE"  # Module sources
+		] + [f"{sourceDir}\\{f}" for f in ignorePaths]
+	]
 )
-env.Depends(sphinxHtml, devDocsInstall)
+env.Depends(sphinxAPIDocs, devDocsInstall)
+sphinxHtml = env.Command(
+	"_build",
+	sphinxAPIDocs,
+	[[
+		sys.executable,
+		"-m", "sphinx.cmd.build",
+		"-M", "html",
+		"devDocs",  # Source directory
+		"$TARGET",  # Build directory
+	]]
+)
 devDocs_nvda = env.Command(devDocsOutputDir.Dir('NVDA'), sphinxHtml, Move('$TARGET', '$SOURCE'))
 env.Alias('devDocs', [devGuide, devDocs_nvda])
 env.Clean('devDocs', [devGuide, devDocs_nvda])
