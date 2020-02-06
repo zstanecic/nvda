@@ -875,6 +875,9 @@ class NVDAObject(documentBase.TextContainerObject, baseObject.ScriptableObject, 
 		"""
 		return controlTypes.STATE_FOCUSABLE in self.states
 
+	def isGainFocusValid(self):
+		return True
+
 	def _get_hasFocus(self):
 		"""Whether this object has focus.
 		@rtype: bool

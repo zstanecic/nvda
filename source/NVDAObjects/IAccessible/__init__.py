@@ -680,6 +680,9 @@ the NVDAObject for IAccessible
 			return False
 		return obj.event_windowHandle==self.event_windowHandle and obj.event_objectID==self.event_objectID and obj.event_childID==self.event_childID
 
+	def isGainFocusValid(self):
+		return self._get_shouldAllowIAccessibleFocusEvent()
+
 	def _get_shouldAllowIAccessibleFocusEvent(self):
 		"""Determine whether a focus event should be allowed for this object.
 		Normally, this checks for the focused state to help eliminate redundant or invalid focus events.

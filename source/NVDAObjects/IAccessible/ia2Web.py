@@ -1,8 +1,8 @@
-#NVDAObjects/IAccessible/ia2Web.py
-#A part of NonVisual Desktop Access (NVDA)
-#This file is covered by the GNU General Public License.
-#See the file COPYING for more details.
-#Copyright (C) 2006-2017 NV Access Limited
+# NVDAObjects/IAccessible/ia2Web.py
+# A part of NonVisual Desktop Access (NVDA)
+# This file is covered by the GNU General Public License.
+# See the file COPYING for more details.
+# Copyright (C) 2006-2020 NV Access Limited
 
 """Base classes with common support for browsers exposing IAccessible2.
 """
@@ -14,7 +14,7 @@ import IAccessibleHandler
 import controlTypes
 from logHandler import log
 from documentBase import DocumentWithTableNavigation
-from NVDAObjects.behaviors import Dialog, WebDialog 
+from NVDAObjects.behaviors import Dialog, WebDialog
 from . import IAccessible
 from .ia2TextMozilla import MozillaCompoundTextInfo
 import aria
@@ -67,6 +67,9 @@ class Ia2Web(IAccessible):
 		if self.IA2Attributes.get('goog-editable')=="false":
 			states.discard(controlTypes.STATE_EDITABLE)
 		return states
+
+	def isGainFocusValid(self):
+		return self._get_shouldAllowIAccessibleFocusEvent()
 
 	def _get_landmark(self):
 		xmlRoles = self.IA2Attributes.get('xml-roles', '').split(' ')
