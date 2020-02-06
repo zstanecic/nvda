@@ -1,8 +1,8 @@
-# -*- coding: UTF-8 -*-
-#A part of NonVisual Desktop Access (NVDA)
-#This file is covered by the GNU General Public License.
-#See the file COPYING for more details.
-#Copyright (C) 2006-2019 NV Access Limited, Peter Vágner, Aleksey Sadovoy, Babbage B.V., Bill Dengler
+#  -*- coding: UTF-8 -*-
+# A part of NonVisual Desktop Access (NVDA)
+# This file is covered by the GNU General Public License.
+# See the file COPYING for more details.
+# Copyright (C) 2006-2020 NV Access Limited, Peter Vágner, Aleksey Sadovoy, Babbage B.V., Bill Dengler
 
 """High-level functions to speak information.
 """ 
@@ -23,6 +23,8 @@ import textInfos
 import speechDictHandler
 import characterProcessing
 import languageHandler
+from . import commands
+from . import manager
 from .commands import (
 	# Commands that are used in this file.
 	SpeechCommand,
@@ -53,7 +55,17 @@ from .commands import (  # noqa: F401
 
 from . import types
 from .types import SpeechSequence, SequenceItemT
-from typing import Optional, Dict, List, Any, Generator, Union, Callable, Iterator, Tuple
+from typing import (
+	Optional,
+	Dict,
+	List,
+	Any,
+	Generator,
+	Union,
+	Callable,
+	Iterator,
+	Tuple,
+)
 from logHandler import log
 import config
 import aria
@@ -416,9 +428,13 @@ def getObjectPropertiesSpeech(  # noqa: C901
 			newPropertyValues['states']=states
 	#Get the speech text for the properties we want to speak, and then speak it
 	speechSequence = getPropertiesSpeech(reason=reason, **newPropertyValues)
+
 	if speechSequence:
 		if _prefixSpeechCommand is not None:
 			speechSequence.insert(0, _prefixSpeechCommand)
+		cancelCommand = _getCancellableEvent(obj, reason)
+		if cancelCommand is not None:
+			speechSequence.append(cancelCommand)
 	return speechSequence
 
 
@@ -455,6 +471,36 @@ def speakObject(
 
 def _flattenNestedSequences(nestedSequences: Iterator[SpeechSequence]) -> Iterator[SequenceItemT]:
 	return [i for seq in nestedSequences for i in seq]
+
+
+def _getCancellableEvent(
+		obj,
+		reason: controlTypes.OutputReason
+) -> Optional[commands.CancelableSpeechCommand]:
+	if reason != controlTypes.REASON_FOCUS or not manager.shouldCancelExpiredFocusEvents():
+		return None
+	from NVDAObjects import NVDAObject
+	if not isinstance(obj, NVDAObject):
+		log.warning("Unhandled object type. Expected all objects to be descendant from NVDAObject")
+		return None
+
+	from NVDAObjects.IAccessible.ia2Web import Ia2Web
+	if not isinstance(obj, Ia2Web):
+		return None
+	obj: Ia2Web = obj
+
+	focusInfo = obj.getFocusInfo()
+
+	def checkIfValid():
+		log.debug("checked if valid, speakObjectProperties")
+		newFocusInfo = obj.getFocusInfo()
+		hasFocusNow: bool = newFocusInfo['stateFocused']
+		previouslyHadFocus: bool = focusInfo['stateFocused']
+		ancestorHasFocusNow: bool = newFocusInfo['indirectionsToAncestor'] != None
+
+		return hasFocusNow or (not previouslyHadFocus and ancestorHasFocusNow)
+
+	return commands.CancelableSpeechCommand(checkIfValid)
 
 
 # C901 'getObjectSpeech' is too complex
@@ -2530,10 +2576,9 @@ speakWithoutPauses = _speakWithoutPauses.speakWithoutPauses
 #: Kept for backwards compatibility.
 re_last_pause = _speakWithoutPauses.re_last_pause
 
-from .manager import SpeechManager
 #: The singleton _SpeechManager instance used for speech functions.
-#: @type: L{_SpeechManager}
-_manager = SpeechManager()
+#: @type: L{manager.SpeechManager}
+_manager = manager.SpeechManager()
 
 
 def clearTypedWordBuffer() -> None:

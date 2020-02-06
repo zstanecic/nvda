@@ -492,6 +492,9 @@ class NVDAObject(documentBase.TextContainerObject, baseObject.ScriptableObject, 
 		"""
 		raise NotImplementedError
 
+	# Type info for auto property:
+	states: set
+
 	def _get_states(self):
 		"""Retrieves the current states of this object (example: selected, focused).
 		@return: a set of  STATE_* constants from L{controlTypes}.
@@ -874,6 +877,9 @@ class NVDAObject(documentBase.TextContainerObject, baseObject.ScriptableObject, 
 		@rtype: bool
 		"""
 		return controlTypes.STATE_FOCUSABLE in self.states
+
+	def isGainFocusValid(self):
+		return True
 
 	def _get_hasFocus(self):
 		"""Whether this object has focus.
