@@ -69,7 +69,7 @@ class Ia2Web(IAccessible):
 		return states
 
 	def isGainFocusValid(self):
-		return self._get_shouldAllowIAccessibleFocusEvent()
+		return controlTypes.STATE_FOCUSED in self.states
 
 	def _get_landmark(self):
 		xmlRoles = self.IA2Attributes.get('xml-roles', '').split(' ')

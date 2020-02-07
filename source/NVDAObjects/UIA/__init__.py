@@ -1028,7 +1028,7 @@ class UIA(Window):
 			return False
 
 	def isGainFocusValid(self):
-		return self._get_shouldAllowUIAFocusEvent()
+		return True #self._get_shouldAllowUIAFocusEvent()
 
 	def _get_shouldAllowUIAFocusEvent(self):
 		try:
