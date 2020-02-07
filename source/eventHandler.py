@@ -156,7 +156,7 @@ def executeEvent(eventName, obj, **kwargs):
 			from NVDAObjects import NVDAObject
 			if not isinstance(obj, NVDAObject):
 				log.warning("Unhandled object type. Expected all objects to be descendant from NVDAObject")
-			elif not obj.isGainFocusValid():
+			elif False and not obj.isGainFocusValid():
 				# Don't bother processing events that are no longer correct.
 				log.debug("executeEvent: Skipped speaking object that is no longer focused")
 				return

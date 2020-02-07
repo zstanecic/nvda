@@ -484,9 +484,22 @@ def _getCancellableEvent(
 		log.warning("Unhandled object type. Expected all objects to be descendant from NVDAObject")
 		return None
 
+	from NVDAObjects.IAccessible.ia2Web import Ia2Web
+	if not isinstance(obj, Ia2Web):
+		return None
+	obj: Ia2Web = obj
+
+	focusInfo = obj.getFocusInfo()
+
 	def checkIfValid():
 		log.debug("checked if valid, speakObjectProperties")
-		return obj.isGainFocusValid()
+		newFocusInfo = obj.getFocusInfo()
+		hasFocusNow: bool = newFocusInfo['stateFocused']
+		previouslyHadFocus: bool = focusInfo['stateFocused']
+		ancestorHasFocusNow: bool = newFocusInfo['indirectionsToAncestor'] != None
+
+		return hasFocusNow or (not previouslyHadFocus and ancestorHasFocusNow)
+
 	return commands.CancelableSpeechCommand(checkIfValid)
 
 

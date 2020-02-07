@@ -68,8 +68,39 @@ class Ia2Web(IAccessible):
 			states.discard(controlTypes.STATE_EDITABLE)
 		return states
 
+	def _getIndirectionsToParentWithFocus(self):
+		testObj = self
+		indirections = 0
+		while testObj:
+			if controlTypes.STATE_FOCUSED in testObj.states:
+				break
+			parent = testObj.parent
+			# Cache the parent.
+			testObj.parent = parent
+			testObj = parent
+			indirections += 1
+		else:
+			return None
+		return indirections
+
+	def getFocusInfo(self):
+		return {
+			'accFocus': self.IAccessibleObject.accFocus,
+			'stateFocused': controlTypes.STATE_FOCUSED in self.states,
+			'indirectionsToAncestor': self._getIndirectionsToParentWithFocus(),
+		}
+
 	def isGainFocusValid(self):
-		return controlTypes.STATE_FOCUSED in self.states
+		from winUser import CHILDID_SELF
+		hasAccFocus = CHILDID_SELF == self.IAccessibleObject.accFocus
+		hasSystemFocusState = controlTypes.STATE_FOCUSED in self.states
+		hasFocusedAncestor = self._get_shouldAllowIAccessibleFocusEvent()
+		return (
+				#hasAccFocus or
+				hasSystemFocusState or
+				#hasFocusedAncestor or
+				False
+		)
 
 	def _get_landmark(self):
 		xmlRoles = self.IA2Attributes.get('xml-roles', '').split(' ')
