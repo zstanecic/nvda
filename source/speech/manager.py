@@ -405,7 +405,7 @@ class SpeechManager(object):
 			f"{len(self._cancelCommandsForUtteranceBeingSpokenBySynth.keys())}"
 		)
 		for command, index in self._cancelCommandsForUtteranceBeingSpokenBySynth.items():
-			if True or command.isCancelled:
+			if command.isCancelled:
 				# we must not risk deleting commands while iterating over _cancelCommandsForUtteranceBeingSpokenBySynth
 				if not latestCanceledUtteranceIndex or latestCanceledUtteranceIndex < index:
 					latestCanceledUtteranceIndex = index
