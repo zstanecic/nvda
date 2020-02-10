@@ -1027,9 +1027,6 @@ class UIA(Window):
 		except:
 			return False
 
-	def isGainFocusValid(self):
-		return True #self._get_shouldAllowUIAFocusEvent()
-
 	def _get_shouldAllowUIAFocusEvent(self):
 		try:
 			return bool(self._getUIACacheablePropertyValue(UIAHandler.UIA_HasKeyboardFocusPropertyId))

@@ -36,6 +36,9 @@ import NVDAObjects.JAB
 import eventHandler
 from NVDAObjects.behaviors import ProgressBar, Dialog, EditableTextWithAutoSelectDetection, FocusableUnfocusableContainer, ToolTip, Notification
 from locationHelper import RectLTWH
+from typing import (
+	Optional,
+)
 
 def getNVDAObjectFromEvent(hwnd,objectID,childID):
 	try:
@@ -680,8 +683,20 @@ the NVDAObject for IAccessible
 			return False
 		return obj.event_windowHandle==self.event_windowHandle and obj.event_objectID==self.event_objectID and obj.event_childID==self.event_childID
 
-	def isGainFocusValid(self):
-		return True # self._get_shouldAllowIAccessibleFocusEvent()
+	def _getIndirectionsToParentWithFocus(self) -> Optional[int]:
+		testObj = self
+		indirections = 0
+		while testObj:
+			if controlTypes.STATE_FOCUSED in testObj.states:
+				break
+			parent = testObj.parent
+			# Cache the parent.
+			testObj.parent = parent
+			testObj = parent
+			indirections += 1
+		else:
+			return None
+		return indirections
 
 	def _get_shouldAllowIAccessibleFocusEvent(self):
 		"""Determine whether a focus event should be allowed for this object.
@@ -691,17 +706,8 @@ the NVDAObject for IAccessible
 		@rtype: bool
 		"""
 		#this object or one of its ancestors must have state_focused.
-		testObj = self
-		while testObj:
-			if controlTypes.STATE_FOCUSED in testObj.states:
-				break
-			parent = testObj.parent
-			# Cache the parent.
-			testObj.parent = parent
-			testObj = parent
-		else:
-			return False
-		return True
+		indirectionsToFocus = self._getIndirectionsToParentWithFocus()
+		return indirectionsToFocus is not None
 
 	def _get_TextInfo(self):
 		if hasattr(self,'IAccessibleTextObject'):

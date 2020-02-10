@@ -153,14 +153,10 @@ def executeEvent(eventName, obj, **kwargs):
 			log.debug("executeEvent: Removing cancelled speech commands.")
 			# ask speechManager to check if any of it's queued utterances should be cancelled
 			speech._manager.removeCancelledSpeechCommands()
-			from NVDAObjects import NVDAObject
-			if not isinstance(obj, NVDAObject):
-				log.warning("Unhandled object type. Expected all objects to be descendant from NVDAObject")
-			elif False and not obj.isGainFocusValid():
-				# Don't bother processing events that are no longer correct.
-				log.debug("executeEvent: Skipped speaking object that is no longer focused")
-				return
-			log.debug("executeEvent: Did not skip object")
+			# Don't skip objects without focus here. Even if an object no longer has focus, it needs to be processed
+			# to capture changes in document depth. For instance jumping into a list?
+			# This needs further investigation; when the next object gets focus, it should
+			# allow us to capture this information?
 		if isGainFocus and not doPreGainFocus(obj, sleepMode=sleepMode):
 			return
 		elif not sleepMode and eventName=="documentLoadComplete" and not doPreDocumentLoadComplete(obj):
